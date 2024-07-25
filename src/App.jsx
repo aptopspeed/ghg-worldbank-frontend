@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Container,
@@ -15,9 +14,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Box
+  Box,
+  Alert
 } from '@mui/material';
-import Swal from 'sweetalert2';
 import { useTheme } from '@mui/material/styles';
 import LineChartGHGApex from "./components/LIneChartGHGApex";
 import GroupBarSectorApex from './components/GroupBarSectorApex';
@@ -47,33 +46,12 @@ const App = () => {
   const [selectedCountries, setSelectedCountries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-
-  const navigate = useNavigate();
-
-  const showErrors = useCallback(() => {
-    if (errors.length > 0) {
-      Swal.fire({
-        title: 'Error',
-        html: errors.join('<br>'),
-        icon: 'error',
-        confirmButtonText: 'OK'
-      }).then(() => {
-        // Redirect to 404 page if critical data is missing
-        if (errors.some(error => error.includes('countries') || error.includes('years'))) {
-          navigate('/error', { state: { status: 503, message: "Unable to connect to the server. Please try again later." } });
-        }
-      });
-    }
-  }, [errors, navigate]);
-
-  const addError = useCallback((errorMessage) => {
-    setErrors(prevErrors => [...prevErrors, errorMessage]);
-  }, []);
 
 
   const renderChart = (ChartComponent, chartData, isLineChart = false) => (
@@ -109,9 +87,9 @@ const App = () => {
       setCountries(response.data);
     } catch (error) {
       console.error('Error fetching countries:', error);
-      addError('Error fetching countries');
+      setError('Error fetching countries');
     }
-  }, [addError]);
+  }, []);
 
   const fetchYears = useCallback(async () => {
     try {
@@ -119,9 +97,9 @@ const App = () => {
       setYears(response.data);
     } catch (error) {
       console.error('Error fetching years:', error);
-      addError('Error fetching years');
+      setError('Error fetching years');
     }
-  }, [addError]);
+  }, []);
 
   const fetchData = useCallback(async (countryCodes) => {
     setLoading(true);
@@ -130,11 +108,11 @@ const App = () => {
       setData(response.data);
     } catch (error) {
       console.error('Error fetching emissions data:', error);
-      addError('Error fetching emissions data');
+      setError('Error fetching emissions data');
     } finally {
       setLoading(false);
     }
-  }, [addError]);
+  }, []);
 
   const fetchDataBar = useCallback(async (year) => {
     try {
@@ -142,9 +120,9 @@ const App = () => {
       setDataBar(response.data);
     } catch (error) {
       console.error('Error fetching dataBar:', error);
-      addError('Error fetching sector data');
+      setError('Error fetching sector data');
     }
-  }, [addError]);
+  }, []);
 
   const fetchAllMapData = useCallback(async () => {
     try {
@@ -152,9 +130,9 @@ const App = () => {
       setAllMapData(response.data);
     } catch (error) {
       console.error('Error fetching all map data:', error);
-      addError('Error fetching map data');
+      setError('Error fetching data');
     }
-  }, [addError]);
+  }, []);
 
   const filteredMapData = useMemo(() => {
     if (!selectedYear) return [];
@@ -170,11 +148,6 @@ const App = () => {
     });
   }, [allMapData, selectedYear]);
 
-  useEffect(() => {
-    showErrors();
-    // Clear errors after showing them
-    setErrors([]);
-  }, [errors, showErrors]);
 
   useEffect(() => {
     fetchCountries();
@@ -210,6 +183,11 @@ const App = () => {
 
   return (
     <Container maxWidth={isDesktop ? "lg" : (isTablet ? "md" : "sm")}>
+      {error && (
+        <Typography color="error" sx={{ mt: 2, mb: 2 }}>
+          {error}
+        </Typography>
+      )}
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Typography
@@ -228,15 +206,15 @@ const App = () => {
         </Grid>
 
         <Grid item xs={12}>
-        <Typography
-          variant="subtitle1"
-          align="left"
-          sx={{
-            color: theme.palette.primary.main,
-            fontWeight: 500,
-            marginBottom: theme.spacing(1),
-            fontSize: '1rem',
-          }}>Total GHG with Countries
+          <Typography
+            variant="subtitle1"
+            align="left"
+            sx={{
+              color: theme.palette.primary.main,
+              fontWeight: 500,
+              marginBottom: theme.spacing(1),
+              fontSize: '1rem',
+            }}>Total GHG with Countries
           </Typography>
           <Autocomplete
             multiple
@@ -286,15 +264,15 @@ const App = () => {
         </Grid>
 
         <Grid item xs={12}>
-        <Typography
-          variant="subtitle1"
-          align="left"
-          sx={{
-            color: theme.palette.primary.main,
-            fontWeight: 500,
-            marginBottom: theme.spacing(1),
-            fontSize: '1rem',
-          }}>GHG Emissions Compare Data
+          <Typography
+            variant="subtitle1"
+            align="left"
+            sx={{
+              color: theme.palette.primary.main,
+              fontWeight: 500,
+              marginBottom: theme.spacing(1),
+              fontSize: '1rem',
+            }}>GHG Emissions Compare Data
           </Typography>
           <FormControl fullWidth>
             <InputLabel id="year-select-label">Select Year</InputLabel>
